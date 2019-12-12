@@ -1,0 +1,29 @@
+# create a new session with specific session name
+# python file needs to be hosted on HDFS, but it works.
+curl -X POST --data '{"kind": "pyspark", "name": "reachcalc", "pyFiles": ["/root/query/python/"]}' -H "Content-Type: application/json" localhost:8998/sessions/
+
+# get session info (instead of calling the session ID you can just call the name)
+curl -X GET localhost:8998/sessions/reachcalc
+
+# execute code
+curl -X POST --data '{"code": "merchants = spark.read.csv(\"/root/data/merchants.csv\"); merchants.count() "}' -H "Content-Type: application/json" localhost:8998/sessions/reachcalc/statements
+curl -X POST --data '{"code": "import reach"}' -H "Content-Type: application/json" localhost:8998/sessions/reachcalc/statements
+curl -X POST --data '{"code": "import reach; reach.calculate_reach(reach.read_hdfs(\"/root/data/merchants.csv\"))"}' -H "Content-Type: application/json" localhost:8998/sessions/reachcalc/statements
+curl -X POST --data '{"code": "from reach import reachcalculator as rc; rc.calculate_reach(rc.read_hdfs(\"/root/data/merchants.csv\"))"}' -H "Content-Type: application/json" localhost:8998/sessions/reachcalc/statements
+
+
+
+
+# get result
+curl -X GET localhost:8998/sessions/reachcalc/statements/0
+
+
+# kill session
+curl -X DELETE localhost:8998/sessions/reachcalc
+
+
+Notes:
+    - Session ID is unique, and Livy won't allow you to start another session with the same name 
+    unless you kill the first session.
+    - Could statement incrementer be a problem? Need to keep track of the incremental number of statements made or kill the session.
+    - Need to escape quotes (\"foo\") with JSON in cURL...
